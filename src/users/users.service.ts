@@ -20,25 +20,25 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(
-    email: string,
+  async findByUserId(
+    userId: string,
     withPassword = false,
   ): Promise<UserDocument | null> {
-    const query = this.userModel.findOne({ email });
+    const query = this.userModel.findOne({ userId });
     if (withPassword) query.select('+password');
     return query.exec();
   }
 
   async create(
-    email: string,
+    userId: string,
     password: string,
     name: string,
   ): Promise<UserDocument> {
-    const existing = await this.userModel.findOne({ email });
-    if (existing) throw new ConflictException('Email already in use');
+    const existing = await this.userModel.findOne({ userId });
+    if (existing) throw new ConflictException('User ID already in use');
 
     const hash = await bcrypt.hash(password, 10);
-    return this.userModel.create({ email, password: hash, name });
+    return this.userModel.create({ userId, password: hash, name });
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<UserDocument> {

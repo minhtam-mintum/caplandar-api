@@ -11,6 +11,7 @@ import {
 } from './schemas/refresh-token.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import type { StringValue } from 'ms';
 
 const REFRESH_TTL_DAYS = 7;
 
@@ -26,18 +27,18 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const user = await this.usersService.create(
-      dto.email,
+      dto.userId,
       dto.password,
       dto.name,
     );
     return {
       message: 'User created',
-      user: { _id: user._id, email: user.email, name: user.name },
+      user: { _id: user._id, userId: user.userId, name: user.name },
     };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email, true);
+    const user = await this.usersService.findByUserId(dto.userId, true);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.password);
@@ -46,7 +47,7 @@ export class AuthService {
     const tokens = await this.issueTokens(String(user._id));
     return {
       ...tokens,
-      user: { _id: user._id, email: user.email, name: user.name },
+      user: { _id: user._id, userId: user.userId, name: user.name },
     };
   }
 
@@ -87,15 +88,13 @@ export class AuthService {
     const payload = { sub: userId };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.config.get<string>('JWT_ACCESS_SECRET'),
-
-      expiresIn: this.config.get('JWT_ACCESS_EXPIRES_IN'),
+      secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+      expiresIn: this.config.getOrThrow<StringValue>('JWT_ACCESS_EXPIRES_IN'),
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-
-      expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN'),
+      secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.config.getOrThrow<StringValue>('JWT_REFRESH_EXPIRES_IN'),
     });
 
     const expiresAt = new Date();
