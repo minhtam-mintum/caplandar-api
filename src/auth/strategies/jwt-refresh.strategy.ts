@@ -12,7 +12,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 ) {
   constructor(config: ConfigService) {
     const opts: StrategyOptionsWithRequest = {
-      jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: config.get<string>('JWT_REFRESH_SECRET') as string,
       ignoreExpiration: false,
       passReqToCallback: true,
@@ -22,7 +22,8 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
   validate(req: Request, payload: JwtPayload) {
     if (!payload.sub) throw new UnauthorizedException();
-    const { refreshToken } = req.body as { refreshToken: string };
+    const authHeader = (req.headers.authorization as string) ?? '';
+    const refreshToken = authHeader.replace(/^Bearer\s+/i, '');
     return { userId: payload.sub, refreshToken };
   }
 }
